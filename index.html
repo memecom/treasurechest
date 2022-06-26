@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js"></script>
+    <script
+      src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"
+      type="application/javascript"
+    ></script>
+  </head>
+  <body>
+    <div id="app">
+      <img src="https://vuejs.org/images/logo.png" alt="Vue logo" />
+      <title>Welcome to Vue</title>
+      <h1>{{ greeting }}</h1>
+      <span>{{ account }}</span>
+      <span>{{ network }}</span>
+      <span>{{ keys }}</span>
+      <button v-if="!account" @click="signIn">Connect to wallet</button>
+      <button @click="randomNFT">🔓 My Random NFT</button>
+    </div>
+    <script>
+      var app = new Vue({
+        el: "#app",
+        data: {
+          greeting: "Welcome to the treasure chest!",
+          account: "",
+          network: "",
+          keys: 0,
+          provider: null,
+        },
+        methods: {
+          humanizeURL: function (url) {
+            return url.replace(/^https?:\/\//, "").replace(/\/$/, "");
+          },
+          signIn: async function (event) {
+            console.log("sign in");
+            if (window.ethereum) {
+              try {
+                if (window.ethereum.networkVersion == "80001") {
+                  this.network = "matic testnet";
+                } else {
+                  this.network = "change network to matic testnet";
+                }
+                this.provider = new ethers.providers.Web3Provider(
+                  window.ethereum
+                );
+                await this.provider.send("eth_requestAccounts", []);
+
+                // The MetaMask plugin also allows signing transactions to
+                // send ether and pay to change state within the blockchain.
+                // For this, you need the account signer...
+                const signer = this.provider.getSigner();
+                this.account = await signer.getAddress();
+                this.getKeyContractBalance(this.provider, this.account);
+              } catch (error) {
+                console.log(error);
+              }
+            }
+          },
+          getKeyContractBalance: async function () {
+            console.log("get keys");
+            const keysAddress = "0x0cAaD737e3FcAFBB1F531b1129a32C9e8Bf77671";
+            const keysAbi = [
+              // Some details about the token
+              "function name() view returns (string)",
+              "function symbol() view returns (string)",
+
+              // Get the account balance
+              "function balanceOf(address) view returns (uint)",
+
+              // Send some of your tokens to someone else
+              "function transfer(address to, uint amount)",
+
+              // An event triggered whenever anyone transfers to someone else
+              "event Transfer(address indexed from, address indexed to, uint amount)",
+            ];
+            const keyContract = new ethers.Contract(
+              keysAddress,
+              keysAbi,
+              this.provider
+            );
+            this.keys = await keyContract.balanceOf(this.account);
+            this.keys = ethers.utils.formatUnits(this.keys, 18);
+          },
+        },
+        mounted: function () {
+          console.log("mounted");
+          this.signIn();
+        },
+      });
+    </script>
+
+    <style>
+      #app {
+        display: flex;
+        flex-direction: column;
+        width: max-content;
+        justify-content: center;
+        align-items: center;
+        margin: auto;
+      }
+    </style>
+  </body>
+</html>
