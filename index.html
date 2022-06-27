@@ -25,7 +25,7 @@
     <div id="app">
       <div id="navbar">
         <!-- Navbar -->
-        <button id="connect-wallet" class="nes-btn is-primary" @click="signIn">
+        <button id="connect-wallet" class="nes-btn is-normal" @click="signIn">
           {{ !account ? 'Connect to wallet' : humanizeWallet(account) }}
         </button>
         <span v-if="account" id="key-info">🗝️ {{ keys }}</span>
@@ -34,10 +34,17 @@
         <!-- Main -->
         <img src="https://vuejs.org/images/logo.png" alt="Vue logo" />
         <h1>{{ greeting }}</h1>
-        <div id="nw-info" v-if="account">
-          <button id="unlock-nft" class="nes-btn is-error" @click="randomNFT">
-            <span> My Random NFT</span>
-          </button>
+        <div id="app-dialog">
+          <div id="nft-list-section"></div>
+          <div id="nft-unlock-section" v-if="account">
+            <button
+              id="unlock-nft"
+              class="nes-btn is-primary"
+              @click="randomNFT"
+            >
+              <span>🔐 My Random NFT</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -64,20 +71,19 @@
           signIn: async function (event) {
             console.log("sign in");
             if (window.ethereum) {
+              this.provider = new ethers.providers.Web3Provider(
+                window.ethereum
+              );
+              await this.provider.send("eth_requestAccounts", []);
+              const signer = this.provider.getSigner();
+              this.account = await signer.getAddress();
+              this.getKeyContractBalance(this.provider, this.account);
               try {
                 if (window.ethereum.networkVersion == "80001") {
-                  this.network = "matic testnet";
+                  this.greeting = "";
                 } else {
-                  this.network = "change network to matic testnet";
+                  this.greeting = "change network to matic testnet";
                 }
-                this.provider = new ethers.providers.Web3Provider(
-                  window.ethereum
-                );
-                await this.provider.send("eth_requestAccounts", []);
-
-                const signer = this.provider.getSigner();
-                this.account = await signer.getAddress();
-                this.getKeyContractBalance(this.provider, this.account);
               } catch (error) {
                 console.log(error);
               }
@@ -196,8 +202,34 @@
         margin-top: 10px;
       }
       #unlock-nft {
+        font-size: 0.75rem !important;
+        width: max-content;
+      }
+      #app-dialog {
+        display: flex;
+        gap: 10%;
+        position: absolute;
         float: left;
-        bottom: 250px;
+        bottom: 150px;
+        height: 500px;
+        width: 1000px;
+      }
+      #nft-list-section {
+        flex-basis: 50%;
+        border-radius: 0.75rem;
+        background-color: rgb(245, 245, 245);
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1),
+          0 2px 4px -2px rgb(0 0 0 / 0.1);
+      }
+      #nft-unlock-section {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-basis: 50%;
+        border-radius: 0.75rem;
+        background-color: rgb(245, 245, 245);
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1),
+          0 2px 4px -2px rgb(0 0 0 / 0.1);
       }
     </style>
   </body>
