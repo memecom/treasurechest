@@ -2,27 +2,50 @@
 <html>
   <head>
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js"></script>
+    <link
+      href="https://unpkg.com/nes.css@2.3.0/css/nes.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://unpkg.com/nes.icons@latest/css/nes-icons.min.css"
+      rel="stylesheet"
+    />
+
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap");
+    </style>
     <script
       src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"
       type="application/javascript"
     ></script>
   </head>
+  <title>Welcome to Vue</title>
+
   <body>
     <div id="app">
-      <img src="https://vuejs.org/images/logo.png" alt="Vue logo" />
-      <title>Welcome to Vue</title>
-      <h1>{{ greeting }}</h1>
-      <span>{{ account }}</span>
-      <span>{{ network }}</span>
-      <span>{{ keys }}</span>
-      <button v-if="!account" @click="signIn">Connect to wallet</button>
-      <button @click="randomNFT">🔓 My Random NFT</button>
+      <div id="navbar">
+        <!-- Navbar -->
+        <button id="connect-wallet" class="nes-btn is-primary" @click="signIn">
+          {{ !account ? 'Connect to wallet' : humanizeWallet(account) }}
+        </button>
+        <span v-if="account" id="key-info">🗝️ {{ keys }}</span>
+      </div>
+      <div id="main">
+        <!-- Main -->
+        <img src="https://vuejs.org/images/logo.png" alt="Vue logo" />
+        <h1>{{ greeting }}</h1>
+        <div id="nw-info" v-if="account">
+          <button id="unlock-nft" class="nes-btn is-error" @click="randomNFT">
+            <span> My Random NFT</span>
+          </button>
+        </div>
+      </div>
     </div>
     <script>
       var app = new Vue({
         el: "#app",
         data: {
-          greeting: "Welcome to the treasure chest!",
+          greeting: "",
           account: "",
           network: "",
           keys: 0,
@@ -34,6 +57,9 @@
         methods: {
           humanizeURL: function (url) {
             return url.replace(/^https?:\/\//, "").replace(/\/$/, "");
+          },
+          humanizeWallet: function (account) {
+            return `${account.substr(0, 5)}...${account.substr(-3)}`;
           },
           signIn: async function (event) {
             console.log("sign in");
@@ -55,6 +81,8 @@
               } catch (error) {
                 console.log(error);
               }
+            } else {
+              this.greeting = "No web3? You should consider trying MetaMask!";
             }
           },
           getKeyContractBalance: async function () {
@@ -84,7 +112,7 @@
               this.provider
             );
             this.keys = await this.keyContract.balanceOf(this.account);
-            this.keys = ethers.utils.formatUnits(this.keys, 18);
+            this.keys = ethers.utils.formatUnits(this.keys, 18) / 1;
           },
           randomNFT: async function () {
             // approve
@@ -130,13 +158,46 @@
     </script>
 
     <style>
+      body {
+        font-family: "Press Start 2P";
+      }
       #app {
         display: flex;
         flex-direction: column;
+        max-width: 72rem;
+        margin: auto;
+        height: 100vh;
+      }
+      #connect-wallet {
         width: max-content;
+        align-items: flex-end;
+        margin-top: 20px;
+      }
+      #navbar {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        align-items: flex-end;
+        float: right;
+        margin-top: 20px;
+      }
+      #main {
+        display: flex;
+        flex-direction: column;
         justify-content: center;
         align-items: center;
+        text-align: center;
         margin: auto;
+      }
+      #key-info {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: 10px;
+      }
+      #unlock-nft {
+        float: left;
+        bottom: 250px;
       }
     </style>
   </body>
