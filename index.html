@@ -16,7 +16,7 @@
       <span>{{ network }}</span>
       <span>{{ keys }}</span>
       <button v-if="!account" @click="signIn">Connect to wallet</button>
-      <!-- <button @click="randomNFT">🔓 My Random NFT</button> -->
+      <button @click="randomNFT">🔓 My Random NFT</button>
     </div>
     <script>
       var app = new Vue({
@@ -26,7 +26,10 @@
           account: "",
           network: "",
           keys: 0,
+          vaultAddress: "0x6CCEaC1D31cF8BB217f26d2CFd56d7E083815F67",
+          keysAddress: "0x366212776F4A2623ae935b0eBE5af6b067D105C6",
           provider: null,
+          keyContract: null,
         },
         methods: {
           humanizeURL: function (url) {
@@ -46,9 +49,6 @@
                 );
                 await this.provider.send("eth_requestAccounts", []);
 
-                // The MetaMask plugin also allows signing transactions to
-                // send ether and pay to change state within the blockchain.
-                // For this, you need the account signer...
                 const signer = this.provider.getSigner();
                 this.account = await signer.getAddress();
                 this.getKeyContractBalance(this.provider, this.account);
@@ -59,7 +59,6 @@
           },
           getKeyContractBalance: async function () {
             console.log("get keys");
-            const keysAddress = "0x0cAaD737e3FcAFBB1F531b1129a32C9e8Bf77671";
             const keysAbi = [
               // Some details about the token
               "function name() view returns (string)",
@@ -71,15 +70,55 @@
               // Send some of your tokens to someone else
               "function transfer(address to, uint amount)",
 
+              // Approve to spend your tokens
+              "function approve(address spender, uint amount)",
+
+              "function increaseAllowance(address spender, uint addedValue)",
+
               // An event triggered whenever anyone transfers to someone else
               "event Transfer(address indexed from, address indexed to, uint amount)",
             ];
-            const keyContract = new ethers.Contract(
-              keysAddress,
+            this.keyContract = new ethers.Contract(
+              this.keysAddress,
               keysAbi,
               this.provider
             );
-            this.keys = await keyContract.balanceOf(this.account);
+            this.keys = await this.keyContract.balanceOf(this.account);
+            this.keys = ethers.utils.formatUnits(this.keys, 18);
+          },
+          randomNFT: async function () {
+            // approve
+            // increase allowance
+            // receive token
+            const vaultAbi = ["function receiveToken(uint amount)"];
+
+            const vaultContract = new ethers.Contract(
+              this.vaultAddress,
+              vaultAbi,
+              this.provider
+            );
+
+            const signer = this.provider.getSigner();
+
+            const tx1 = await this.keyContract
+              .connect(signer)
+              .approve(this.vaultAddress, "10000000000000000000");
+
+            await tx1.wait();
+
+            const tx2 = await this.keyContract
+              .connect(signer)
+              .increaseAllowance(this.vaultAddress, "10000000000000000000");
+
+            await tx2.wait();
+
+            const tx3 = await vaultContract
+              .connect(signer)
+              .receiveToken("10000000000000000000");
+
+            await tx3.wait();
+
+            this.keys = await this.keyContract.balanceOf(this.account);
             this.keys = ethers.utils.formatUnits(this.keys, 18);
           },
         },
