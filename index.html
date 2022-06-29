@@ -35,7 +35,9 @@
         <img src="https://vuejs.org/images/logo.png" alt="Vue logo" />
         <h1>{{ greeting }}</h1>
         <div id="app-dialog">
-          <div id="nft-list-section"></div>
+          <div id="nft-list-section">
+            <img v-for="image in contractImages" :src="image" />          
+          </div>
           <div id="nft-unlock-section" v-if="account">
             <button
               id="unlock-nft"
@@ -57,9 +59,11 @@
           network: "",
           keys: 0,
           vaultAddress: "0x6CCEaC1D31cF8BB217f26d2CFd56d7E083815F67",
+          whiteListedAddress: ["0x994de75b8089739088d679ba0b31c5167a4fa1e3"],
           keysAddress: "0x366212776F4A2623ae935b0eBE5af6b067D105C6",
           provider: null,
           keyContract: null,
+          contractImages: [],
         },
         methods: {
           humanizeURL: function (url) {
@@ -155,10 +159,15 @@
             this.keys = await this.keyContract.balanceOf(this.account);
             this.keys = ethers.utils.formatUnits(this.keys, 18);
           },
+          getContractImages: async function() {
+            this.contractImages = ['https://samplelib.com/lib/preview/png/sample-boat-400x300.png',
+            'https://samplelib.com/lib/preview/png/sample-boat-400x300.png','https://samplelib.com/lib/preview/png/sample-boat-400x300.png'];
+          }
         },
         mounted: function () {
           console.log("mounted");
           this.signIn();
+          this.getContractImages();
         },
       });
     </script>
@@ -207,7 +216,7 @@
       }
       #app-dialog {
         display: flex;
-        gap: 10%;
+        gap: 2rem;
         position: absolute;
         float: left;
         bottom: 150px;
@@ -215,11 +224,18 @@
         width: 1000px;
       }
       #nft-list-section {
+        display: grid;
+        grid-template-columns: auto auto auto;
+        gap: 1rem;
         flex-basis: 50%;
         border-radius: 0.75rem;
         background-color: rgb(245, 245, 245);
         box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1),
           0 2px 4px -2px rgb(0 0 0 / 0.1);
+        padding: 20px;
+      }
+      #nft-list-section img {
+        width: 100px;
       }
       #nft-unlock-section {
         display: flex;
