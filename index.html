@@ -36,7 +36,10 @@
         <h1>{{ greeting }}</h1>
         <div id="app-dialog">
           <div id="nft-list-section">
-            <img v-for="image in contractImages" :src="image" />          
+            <div v-for="token in vaultTokens">
+              <img :src="token.img" />
+              <span v-if="token.owner">available</span>
+            </div>
           </div>
           <div id="nft-unlock-section" v-if="account">
             <button
@@ -59,7 +62,27 @@
           network: "",
           keys: 0,
           vaultAddress: "0x6CCEaC1D31cF8BB217f26d2CFd56d7E083815F67",
-          whiteListedAddress: ["0x994de75b8089739088d679ba0b31c5167a4fa1e3"],
+          vaultTokens: [
+            {
+              address: "0x994DE75b8089739088d679BA0B31c5167a4fA1e3",
+              id: 1,
+              img: "https://samplelib.com/lib/preview/png/sample-boat-400x300.png",
+              owner: true,
+            },
+            {
+              address: "0x994DE75b8089739088d679BA0B31c5167a4fA1e3",
+              id: 2,
+              img: "https://samplelib.com/lib/preview/png/sample-boat-400x300.png",
+              owner: true,
+            },
+            {
+              address: "0x5107A6919Dbd91E8498B364A37C075efAe5A6Ee7",
+              id: 1,
+              img: "https://samplelib.com/lib/preview/png/sample-boat-400x300.png",
+              owner: true,
+            },
+          ],
+          vaultContracts: {},
           keysAddress: "0x366212776F4A2623ae935b0eBE5af6b067D105C6",
           provider: null,
           keyContract: null,
@@ -159,10 +182,33 @@
             this.keys = await this.keyContract.balanceOf(this.account);
             this.keys = ethers.utils.formatUnits(this.keys, 18);
           },
-          getContractImages: async function() {
-            this.contractImages = ['https://samplelib.com/lib/preview/png/sample-boat-400x300.png',
-            'https://samplelib.com/lib/preview/png/sample-boat-400x300.png','https://samplelib.com/lib/preview/png/sample-boat-400x300.png'];
-          }
+          getContractImages: async function () {
+            const abi = [
+              "function balanceOf(address) view returns (uint)",
+              "function ownerOf(uint _tokenId) view returns (address)",
+            ];
+
+            this.vaultTokens.map(async (token) => {
+              console.log(token.address);
+              if (!this.vaultContracts[token.address]) {
+                let contract = new ethers.Contract(
+                  token.address,
+                  abi,
+                  this.provider
+                );
+                this.vaultContracts[token.address] = {};
+                this.vaultContracts[token.address] = contract;
+              }
+
+              const owner = await this.vaultContracts[token.address].ownerOf(
+                token.id
+              );
+              
+              // if token is not in vault
+              if (this.vaultAddress != owner) token.owner = false;
+
+            });
+          },
         },
         mounted: function () {
           console.log("mounted");
