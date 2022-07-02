@@ -36,9 +36,8 @@
         <h1>{{ greeting }}</h1>
         <div id="app-dialog">
           <div id="nft-list-section">
-            <div v-for="token in vaultTokens">
-              <img :src="token.img" />
-              <span v-if="token.owner">available</span>
+            <div id="nft" v-for="token in vaultTokens">
+              <img v-if="token.owner" :src="token.img" />
             </div>
           </div>
           <div id="nft-unlock-section" v-if="account">
@@ -203,10 +202,9 @@
               const owner = await this.vaultContracts[token.address].ownerOf(
                 token.id
               );
-              
+
               // if token is not in vault
               if (this.vaultAddress != owner) token.owner = false;
-
             });
           },
         },
@@ -280,8 +278,26 @@
           0 2px 4px -2px rgb(0 0 0 / 0.1);
         padding: 20px;
       }
-      #nft-list-section img {
-        width: 100px;
+
+      #nft {
+        position: relative;
+        overflow: hidden;
+        width: 200px;
+        height: 200px;
+      }
+      #nft img {
+        width: 100%;
+      }
+      #nft #status {
+        position: absolute;
+        top: 30px;
+        right: -70px;
+        font-size: 10px;
+        transform: rotate(45deg);
+        background: red;
+        color: white;
+        border: 1px solid red;
+        width: 100%;
       }
       #nft-unlock-section {
         display: flex;
