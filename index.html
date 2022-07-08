@@ -26,7 +26,8 @@
       <div id="navbar">
         <!-- Navbar -->
         <button id="connect-wallet" class="nes-btn is-normal">
-          {{ !user.account ? 'Connect to wallet' : humanizeWallet(user.account) }}
+          {{ !user.account ? 'Connect to wallet' : humanizeWallet(user.account)
+          }}
         </button>
         <span v-if="user.account" id="key-info">🗝️ {{ user.balance }}</span>
       </div>
@@ -62,6 +63,7 @@
             abi: "",
             address: "",
             contract: "",
+            tokens: []
           },
           keys: {
             abi: "",
@@ -72,6 +74,7 @@
             account: "",
             balance: 0,
           },
+          contracts: null,
           contractImages: [],
         },
         methods: {
@@ -117,11 +120,40 @@
             this.user.balance = await this.keys.contract.balanceOf(this.user.account);
             this.user.balance = ethers.utils.formatEther(this.user.balance) / 1;
           },
+          tokensInit: async function() {
+
+            // this.vault.tokens = await this.vault.contract.getNFTs();
+
+            const ERC721ABI = [
+              "function balanceOf(address) view returns (uint)",
+              "function ownerOf(uint _tokenId) view returns (address)",
+            ];
+
+            this.vault.tokens.map(async (token) => {
+              console.log(token.address);
+              if (!this.contracts[token.address]) {
+                let contract = new ethers.Contract(
+                  token.address,
+                  ERC721ABI,
+                  this.provider
+                );
+                this.contracts[token.address] = {};
+                this.contracts[token.address] = contract;
+              }
+
+              const owner = await this.contracts[token.address].ownerOf(token.id);
+
+              // if token is not in vault
+              if (this.vault.address != owner) token.owner = false;
+            });
+
+          },
           init: async function () {
             if (window.ethereum) {
               await this.userInit();
               await this.vaultInit();
               await this.keysInit();
+              await this.tokensInit();
             } else {
               this.greeting = "No web3? You should consider trying MetaMask!";
             }
@@ -150,40 +182,11 @@
 
             this.keys = await this.keys.contract.balanceOf(this.user.account);
             this.keys = ethers.utils.formatUnits(this.keys, 18);
-          },
-
-          getContractImages: async function () {
-            
-            // const abi = [
-            //   "function balanceOf(address) view returns (uint)",
-            //   "function ownerOf(uint _tokenId) view returns (address)",
-            // ];
-
-            // this.vaultTokens.map(async (token) => {
-            //   console.log(token.address);
-            //   if (!this.vaultContracts[token.address]) {
-            //     let contract = new ethers.Contract(
-            //       token.address,
-            //       abi,
-            //       this.provider
-            //     );
-            //     this.vaultContracts[token.address] = {};
-            //     this.vaultContracts[token.address] = contract;
-            //   }
-
-            //   const owner = await this.vaultContracts[token.address].ownerOf(
-            //     token.id
-            //   );
-
-            //   // if token is not in vault
-            //   if (this.vaultAddress != owner) token.owner = false;
-            // });
-          },
+          }
         },
         mounted: function () {
           console.log("mounted");
           this.init();
-          this.getContractImages();
         },
       });
     </script>
