@@ -25,10 +25,10 @@
     <div id="app">
       <div id="navbar">
         <!-- Navbar -->
-        <button id="connect-wallet" class="nes-btn is-normal" @click="signIn">
-          {{ !account ? 'Connect to wallet' : humanizeWallet(account) }}
+        <button id="connect-wallet" class="nes-btn is-normal">
+          {{ !user.account ? 'Connect to wallet' : humanizeWallet(user.account) }}
         </button>
-        <span v-if="account" id="key-info">🗝️ {{ keys }}</span>
+        <span v-if="user.account" id="key-info">🗝️ {{ user.balance }}</span>
       </div>
       <div id="main">
         <!-- Main -->
@@ -36,15 +36,15 @@
         <h1>{{ greeting }}</h1>
         <div id="app-dialog">
           <div id="nft-list-section">
-            <div id="nft" v-for="token in vaultTokens">
+            <!-- <div id="nft" v-for="token in vaultTokens">
               <img v-if="token.owner" :src="token.img" />
-            </div>
+            </div> -->
           </div>
-          <div id="nft-unlock-section" v-if="account">
+          <div id="nft-unlock-section" v-if="user.account">
             <button
               id="unlock-nft"
               class="nes-btn is-primary"
-              @click="randomNFT"
+              @click="unlocknft"
             >
               <span>🔐 My Random NFT</span>
             </button>
@@ -57,160 +57,132 @@
         el: "#app",
         data: {
           greeting: "",
-          account: "",
-          network: "",
-          keys: 0,
-          vaultAddress: "0x6CCEaC1D31cF8BB217f26d2CFd56d7E083815F67",
-          vaultTokens: [
-            {
-              address: "0x994DE75b8089739088d679BA0B31c5167a4fA1e3",
-              id: 1,
-              img: "https://samplelib.com/lib/preview/png/sample-boat-400x300.png",
-              owner: true,
-            },
-            {
-              address: "0x994DE75b8089739088d679BA0B31c5167a4fA1e3",
-              id: 2,
-              img: "https://samplelib.com/lib/preview/png/sample-boat-400x300.png",
-              owner: true,
-            },
-            {
-              address: "0x5107A6919Dbd91E8498B364A37C075efAe5A6Ee7",
-              id: 1,
-              img: "https://samplelib.com/lib/preview/png/sample-boat-400x300.png",
-              owner: true,
-            },
-          ],
-          vaultContracts: {},
-          keysAddress: "0x366212776F4A2623ae935b0eBE5af6b067D105C6",
-          provider: null,
-          keyContract: null,
+          provider: "",
+          vault: {
+            abi: "",
+            address: "",
+            contract: "",
+          },
+          keys: {
+            abi: "",
+            address: "",
+            contract: "",
+          },
+          user: {
+            account: "",
+            balance: 0,
+          },
           contractImages: [],
         },
         methods: {
-          humanizeURL: function (url) {
-            return url.replace(/^https?:\/\//, "").replace(/\/$/, "");
-          },
           humanizeWallet: function (account) {
             return `${account.substr(0, 5)}...${account.substr(-3)}`;
           },
-          signIn: async function (event) {
-            console.log("sign in");
+          userInit: async function() {
+            // user init
+            this.provider = new ethers.providers.Web3Provider(window.ethereum);
+            const signer = this.provider.getSigner();
+            this.user.account = await signer.getAddress();
+          },
+          vaultInit: async function() {
+            // vault init
+            this.vault.address = "0xaF46E7ffee264173d3b6B11D04291aAcd71c0a51";
+            this.vault.abi = [
+              "function receiveToken(uint amount)",
+              "function getNFTs() view returns (NFT[] memory)",
+              "function getTokenAddr() view returns (address token)",
+            ];
+            this.vault.contract = new ethers.Contract(
+              this.vault.address,
+              this.vault.abi,
+              this.provider
+            );
+          },
+          keysInit: async function() {
+            //keys init
+            this.keys.abi = [
+              // Recieve key balance in wallet
+              "function balanceOf(address) view returns (uint)",
+              // Approve to spend your tokens
+              "function approve(address spender, uint amount)",
+              // Increase allowance after approving
+              "function increaseAllowance(address spender, uint addedValue)",
+            ];
+            this.keys.address = await this.vault.contract.getTokenAddr();
+            this.keys.contract = new ethers.Contract(
+              this.keys.address,
+              this.keys.abi,
+              this.provider
+            );
+            this.user.balance = await this.keys.contract.balanceOf(this.user.account);
+            this.user.balance = ethers.utils.formatEther(this.user.balance) / 1;
+          },
+          init: async function () {
             if (window.ethereum) {
-              this.provider = new ethers.providers.Web3Provider(
-                window.ethereum
-              );
-              await this.provider.send("eth_requestAccounts", []);
-              const signer = this.provider.getSigner();
-              this.account = await signer.getAddress();
-              this.getKeyContractBalance(this.provider, this.account);
-              try {
-                if (window.ethereum.networkVersion == "80001") {
-                  this.greeting = "";
-                } else {
-                  this.greeting = "change network to matic testnet";
-                }
-              } catch (error) {
-                console.log(error);
-              }
+              await this.userInit();
+              await this.vaultInit();
+              await this.keysInit();
             } else {
               this.greeting = "No web3? You should consider trying MetaMask!";
             }
           },
-          getKeyContractBalance: async function () {
-            console.log("get keys");
-            const keysAbi = [
-              // Some details about the token
-              "function name() view returns (string)",
-              "function symbol() view returns (string)",
-
-              // Get the account balance
-              "function balanceOf(address) view returns (uint)",
-
-              // Send some of your tokens to someone else
-              "function transfer(address to, uint amount)",
-
-              // Approve to spend your tokens
-              "function approve(address spender, uint amount)",
-
-              "function increaseAllowance(address spender, uint addedValue)",
-
-              // An event triggered whenever anyone transfers to someone else
-              "event Transfer(address indexed from, address indexed to, uint amount)",
-            ];
-            this.keyContract = new ethers.Contract(
-              this.keysAddress,
-              keysAbi,
-              this.provider
-            );
-            this.keys = await this.keyContract.balanceOf(this.account);
-            this.keys = ethers.utils.formatUnits(this.keys, 18) / 1;
-          },
-          randomNFT: async function () {
-            // approve
-            // increase allowance
-            // receive token
-            const vaultAbi = ["function receiveToken(uint amount)"];
-
-            const vaultContract = new ethers.Contract(
-              this.vaultAddress,
-              vaultAbi,
-              this.provider
-            );
-
+          unlocknft: async function () {
+            console.log('unlock nft');
             const signer = this.provider.getSigner();
 
-            const tx1 = await this.keyContract
+            const tx1 = await this.keys.contract
               .connect(signer)
-              .approve(this.vaultAddress, "10000000000000000000");
+              .approve(this.vault.address, "10000000000000000000");
 
             await tx1.wait();
 
-            const tx2 = await this.keyContract
+            const tx2 = await this.keys.contract
               .connect(signer)
-              .increaseAllowance(this.vaultAddress, "10000000000000000000");
+              .increaseAllowance(this.vault.address, "10000000000000000000");
 
             await tx2.wait();
 
-            const tx3 = await vaultContract
+            const tx3 = await this.vault.contract
               .connect(signer)
               .receiveToken("10000000000000000000");
 
             await tx3.wait();
 
-            this.keys = await this.keyContract.balanceOf(this.account);
+            this.keys = await this.keys.contract.balanceOf(this.user.account);
             this.keys = ethers.utils.formatUnits(this.keys, 18);
           },
+
           getContractImages: async function () {
-            const abi = [
-              "function balanceOf(address) view returns (uint)",
-              "function ownerOf(uint _tokenId) view returns (address)",
-            ];
+            
+            // const abi = [
+            //   "function balanceOf(address) view returns (uint)",
+            //   "function ownerOf(uint _tokenId) view returns (address)",
+            // ];
 
-            this.vaultTokens.map(async (token) => {
-              console.log(token.address);
-              if (!this.vaultContracts[token.address]) {
-                let contract = new ethers.Contract(
-                  token.address,
-                  abi,
-                  this.provider
-                );
-                this.vaultContracts[token.address] = {};
-                this.vaultContracts[token.address] = contract;
-              }
+            // this.vaultTokens.map(async (token) => {
+            //   console.log(token.address);
+            //   if (!this.vaultContracts[token.address]) {
+            //     let contract = new ethers.Contract(
+            //       token.address,
+            //       abi,
+            //       this.provider
+            //     );
+            //     this.vaultContracts[token.address] = {};
+            //     this.vaultContracts[token.address] = contract;
+            //   }
 
-              const owner = await this.vaultContracts[token.address].ownerOf(
-                token.id
-              );
+            //   const owner = await this.vaultContracts[token.address].ownerOf(
+            //     token.id
+            //   );
 
-              // if token is not in vault
-              if (this.vaultAddress != owner) token.owner = false;
-            });
+            //   // if token is not in vault
+            //   if (this.vaultAddress != owner) token.owner = false;
+            // });
           },
         },
         mounted: function () {
           console.log("mounted");
-          this.signIn();
+          this.init();
           this.getContractImages();
         },
       });
