@@ -61,7 +61,7 @@
           provider: "",
           vault: {
             abi: "",
-            address: "",
+            address: "0x84243561d488cd758764b0848469cb9a9798fcbf",
             contract: "",
             tokens: [],
           },
@@ -98,7 +98,6 @@
           },
           vaultInit: async function () {
             // vault init
-            this.vault.address = "0x84243561d488cd758764b0848469cb9a9798fcbf";
             this.vault.abi = [
               "function receiveToken(uint amount)",
               "function getNFTs() view returns (tuple(address contractAddress, uint256 tokenId, uint256 value)[] memory)",
