@@ -25,7 +25,7 @@
     <div id="app">
       <div id="navbar">
         <!-- Navbar -->
-        <button id="connect-wallet" class="nes-btn is-normal">
+        <button id="connect-wallet" class="nes-btn is-normal" @click="init">
           {{ !user.account ? 'Connect to wallet' : humanizeWallet(user.account)
           }}
         </button>
@@ -37,9 +37,9 @@
         <h1>{{ greeting }}</h1>
         <div id="app-dialog">
           <div id="nft-list-section">
-            <!-- <div id="nft" v-for="token in vaultTokens">
-              <img v-if="token.owner" :src="token.img" />
-            </div> -->
+            <div id="nft" v-for="token in vault.tokens">
+              <img :src="token.uri" />
+            </div>
           </div>
           <div id="nft-unlock-section" v-if="user.account">
             <button
@@ -63,7 +63,7 @@
             abi: "",
             address: "",
             contract: "",
-            tokens: []
+            tokens: [],
           },
           keys: {
             abi: "",
@@ -74,25 +74,34 @@
             account: "",
             balance: 0,
           },
-          contracts: null,
+          contracts: {},
           contractImages: [],
         },
         methods: {
           humanizeWallet: function (account) {
             return `${account.substr(0, 5)}...${account.substr(-3)}`;
           },
-          userInit: async function() {
+          imageFromIpfs: async function (uri) {
+            let url = uri.replace("ipfs://", "https://ipfs.io/ipfs/");
+            const response = await fetch(url);
+            const data = await response.json();
+            let imgurl = data.image;
+            if (imgurl.includes("ipfs://"))
+              imgurl = imgurl.replace("ipfs://", "https://ipfs.io/ipfs/");
+            return imgurl;
+          },
+          userInit: async function () {
             // user init
             this.provider = new ethers.providers.Web3Provider(window.ethereum);
             const signer = this.provider.getSigner();
             this.user.account = await signer.getAddress();
           },
-          vaultInit: async function() {
+          vaultInit: async function () {
             // vault init
-            this.vault.address = "0xaF46E7ffee264173d3b6B11D04291aAcd71c0a51";
+            this.vault.address = "0x84243561d488cd758764b0848469cb9a9798fcbf";
             this.vault.abi = [
               "function receiveToken(uint amount)",
-              "function getNFTs() view returns (NFT[] memory)",
+              "function getNFTs() view returns (tuple(address contractAddress, uint256 tokenId, uint256 value)[] memory)",
               "function getTokenAddr() view returns (address token)",
             ];
             this.vault.contract = new ethers.Contract(
@@ -101,7 +110,7 @@
               this.provider
             );
           },
-          keysInit: async function() {
+          keysInit: async function () {
             //keys init
             this.keys.abi = [
               // Recieve key balance in wallet
@@ -117,20 +126,30 @@
               this.keys.abi,
               this.provider
             );
-            this.user.balance = await this.keys.contract.balanceOf(this.user.account);
+            this.user.balance = await this.keys.contract.balanceOf(
+              this.user.account
+            );
             this.user.balance = ethers.utils.formatEther(this.user.balance) / 1;
           },
-          tokensInit: async function() {
-
-            // this.vault.tokens = await this.vault.contract.getNFTs();
+          tokensInit: async function () {
+            let tokens = await this.vault.contract.getNFTs();
+            tokens.map((token) => {
+              let { tokenId, value, contractAddress } = token;
+              tokenId = ethers.BigNumber.from(tokenId).toString();
+              value = ethers.BigNumber.from(value).toString();
+              this.vault.tokens.push({
+                id: tokenId,
+                value,
+                address: contractAddress,
+                uri: "",
+              });
+            });
 
             const ERC721ABI = [
-              "function balanceOf(address) view returns (uint)",
-              "function ownerOf(uint _tokenId) view returns (address)",
+              "function tokenURI(uint256 _tokenId) view returns (string)",
             ];
 
             this.vault.tokens.map(async (token) => {
-              console.log(token.address);
               if (!this.contracts[token.address]) {
                 let contract = new ethers.Contract(
                   token.address,
@@ -140,13 +159,11 @@
                 this.contracts[token.address] = {};
                 this.contracts[token.address] = contract;
               }
-
-              const owner = await this.contracts[token.address].ownerOf(token.id);
-
-              // if token is not in vault
-              if (this.vault.address != owner) token.owner = false;
+              const uri = await this.contracts[token.address].tokenURI(
+                token.id
+              );
+              token.uri = await this.imageFromIpfs(uri);
             });
-
           },
           init: async function () {
             if (window.ethereum) {
@@ -159,7 +176,6 @@
             }
           },
           unlocknft: async function () {
-            console.log('unlock nft');
             const signer = this.provider.getSigner();
 
             const tx1 = await this.keys.contract
@@ -182,7 +198,7 @@
 
             this.keys = await this.keys.contract.balanceOf(this.user.account);
             this.keys = ethers.utils.formatUnits(this.keys, 18);
-          }
+          },
         },
         mounted: function () {
           console.log("mounted");
