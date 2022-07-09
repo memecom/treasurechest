@@ -45,10 +45,23 @@
             <button
               id="unlock-nft"
               class="nes-btn is-primary"
+              v-if="!unlockstates.show"
               @click="unlocknft"
             >
               <span>🔐 My Random NFT</span>
             </button>
+
+            <div id="nft-unlockstates-section" v-if="unlockstates.show">
+              <span>{{ unlockstates.approve ? '✅' : '⬜' }} Approve</span>
+              <span
+                >{{ unlockstates.increaseAllowance ? '✅' : '⬜' }} Increase
+                Spending</span
+              >
+              <span
+                >{{ unlockstates.receivetoken ? '✅' : '⬜' }} Receive
+                Token</span
+              >
+            </div>
           </div>
         </div>
       </div>
@@ -74,6 +87,12 @@
             account: "",
             balance: 0,
           },
+          unlockstates: {
+            show: false,
+            approve: false,
+            increaseAllowance: false,
+            receivetoken: false,
+          },
           contracts: {},
           contractImages: [],
         },
@@ -89,6 +108,20 @@
             if (imgurl.includes("ipfs://"))
               imgurl = imgurl.replace("ipfs://", "https://ipfs.io/ipfs/");
             return imgurl;
+          },
+          fetchUserKeys: async function () {
+            this.user.balance = await this.keys.contract.balanceOf(
+              this.user.account
+            );
+            this.user.balance = ethers.utils.formatEther(this.user.balance) / 1;
+          },
+          resetUnlockStates: function () {
+            this.unlockstates = {
+              show: false,
+              approve: false,
+              increasepending: false,
+              receivetoken: false,
+            };
           },
           userInit: async function () {
             // user init
@@ -125,13 +158,12 @@
               this.keys.abi,
               this.provider
             );
-            this.user.balance = await this.keys.contract.balanceOf(
-              this.user.account
-            );
-            this.user.balance = ethers.utils.formatEther(this.user.balance) / 1;
+
+            this.fetchUserKeys();
           },
           tokensInit: async function () {
             let tokens = await this.vault.contract.getNFTs();
+            this.vault.tokens = [];
             tokens.map((token) => {
               let { tokenId, value, contractAddress } = token;
               tokenId = ethers.BigNumber.from(tokenId).toString();
@@ -177,26 +209,57 @@
           unlocknft: async function () {
             const signer = this.provider.getSigner();
 
-            const tx1 = await this.keys.contract
-              .connect(signer)
-              .approve(this.vault.address, "10000000000000000000");
+            this.unlockstates.show = true;
 
-            await tx1.wait();
+            try {
+              const tx1 = await this.keys.contract
+                .connect(signer)
+                .approve(this.vault.address, "10000000000000000000");
+              await tx1.wait();
+              this.unlockstates.approve = true;
+            } catch (e) {
+              this.resetUnlockStates();
+              console.log(e);
+            }
 
-            const tx2 = await this.keys.contract
-              .connect(signer)
-              .increaseAllowance(this.vault.address, "10000000000000000000");
+            if (this.unlockstates.approve)
+              try {
+                const tx2 = await this.keys.contract
+                  .connect(signer)
+                  .increaseAllowance(
+                    this.vault.address,
+                    "10000000000000000000"
+                  );
 
-            await tx2.wait();
+                await tx2.wait();
+                this.unlockstates.increaseAllowance = true;
+              } catch (e) {
+                this.resetUnlockStates();
+                console.log(e);
+              }
 
-            const tx3 = await this.vault.contract
-              .connect(signer)
-              .receiveToken("10000000000000000000");
+            if (this.unlockstates.increaseAllowance)
+              try {
+                const tx3 = await this.vault.contract
+                  .connect(signer)
+                  .receiveToken("10000000000000000000");
 
-            await tx3.wait();
+                await tx3.wait();
+                this.unlockstates.receiveToken = true;
+              } catch (e) {
+                this.resetUnlockStates();
+                console.log(e);
+              }
 
-            this.keys = await this.keys.contract.balanceOf(this.user.account);
-            this.keys = ethers.utils.formatUnits(this.keys, 18);
+            if (this.unlockstates.receiveToken) {
+              //sucess
+              // re-initalize all tokens
+              this.tokensInit();
+              // fetch current user balance
+              this.fetchUserKeys();
+              // reset unlock states
+              this.resetUnlockStates();
+            }
           },
         },
         mounted: function () {
@@ -298,6 +361,12 @@
         background-color: rgb(245, 245, 245);
         box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1),
           0 2px 4px -2px rgb(0 0 0 / 0.1);
+      }
+      #nft-unlockstates-section {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: flex-start;
       }
     </style>
   </body>
