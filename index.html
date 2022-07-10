@@ -110,10 +110,13 @@
             return imgurl;
           },
           fetchUserKeys: async function () {
+            console.log("fetch user balance");
             this.user.balance = await this.keys.contract.balanceOf(
               this.user.account
             );
+            console.log(this.user.balance);
             this.user.balance = ethers.utils.formatEther(this.user.balance) / 1;
+            console.log(this.user.balance);
           },
           resetUnlockStates: function () {
             this.unlockstates = {
@@ -126,6 +129,7 @@
           userInit: async function () {
             // user init
             this.provider = new ethers.providers.Web3Provider(window.ethereum);
+            await this.provider.send("eth_requestAccounts", []);
             const signer = this.provider.getSigner();
             this.user.account = await signer.getAddress();
           },
@@ -152,14 +156,14 @@
               // Increase allowance after approving
               "function increaseAllowance(address spender, uint addedValue)",
             ];
+
             this.keys.address = await this.vault.contract.getTokenAddr();
+            console.log(this.keys.address);
             this.keys.contract = new ethers.Contract(
               this.keys.address,
               this.keys.abi,
               this.provider
             );
-
-            this.fetchUserKeys();
           },
           tokensInit: async function () {
             let tokens = await this.vault.contract.getNFTs();
@@ -198,12 +202,18 @@
           },
           init: async function () {
             if (window.ethereum) {
-              await this.userInit();
-              await this.vaultInit();
-              await this.keysInit();
-              await this.tokensInit();
+              try {
+                await this.userInit();
+                await this.vaultInit();
+                await this.keysInit();
+                await this.tokensInit();
+                this.fetchUserKeys();
+              } catch (e) {
+                console.log(e);
+              }
             } else {
-              this.greeting = "No web3? You should consider trying MetaMask!";
+              console.log("no ethereum?");
+              // this.greeting = "No web3? You should consider trying MetaMask!";
             }
           },
           unlocknft: async function () {
@@ -222,44 +232,37 @@
               console.log(e);
             }
 
-            if (this.unlockstates.approve)
-              try {
-                const tx2 = await this.keys.contract
-                  .connect(signer)
-                  .increaseAllowance(
-                    this.vault.address,
-                    "10000000000000000000"
-                  );
+            try {
+              const tx2 = await this.keys.contract
+                .connect(signer)
+                .increaseAllowance(this.vault.address, "10000000000000000000");
 
-                await tx2.wait();
-                this.unlockstates.increaseAllowance = true;
-              } catch (e) {
-                this.resetUnlockStates();
-                console.log(e);
-              }
-
-            if (this.unlockstates.increaseAllowance)
-              try {
-                const tx3 = await this.vault.contract
-                  .connect(signer)
-                  .receiveToken("10000000000000000000");
-
-                await tx3.wait();
-                this.unlockstates.receiveToken = true;
-              } catch (e) {
-                this.resetUnlockStates();
-                console.log(e);
-              }
-
-            if (this.unlockstates.receiveToken) {
-              //sucess
-              // re-initalize all tokens
-              this.tokensInit();
-              // fetch current user balance
-              this.fetchUserKeys();
-              // reset unlock states
+              await tx2.wait();
+              this.unlockstates.increaseAllowance = true;
+            } catch (e) {
               this.resetUnlockStates();
+              console.log(e);
             }
+
+            try {
+              const tx3 = await this.vault.contract
+                .connect(signer)
+                .receiveToken("10000000000000000000");
+
+              await tx3.wait();
+              this.unlockstates.receiveToken = true;
+            } catch (e) {
+              this.resetUnlockStates();
+              console.log(e);
+            }
+
+            //sucess
+            // re-initalize all tokens
+            await this.tokensInit();
+            // fetch current user balance
+            this.fetchUserKeys();
+            // reset unlock states
+            this.resetUnlockStates();
           },
         },
         mounted: function () {
