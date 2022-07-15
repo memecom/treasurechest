@@ -19,27 +19,25 @@
       type="application/javascript"
     ></script>
   </head>
-  <title>Welcome to Vue</title>
+  <title>💰 Unlock treasure chest</title>
 
   <body>
     <div id="app">
       <div id="navbar">
         <!-- Navbar -->
-        <button id="connect-wallet" class="nes-btn is-normal" @click="init">
-          {{ !user.account ? 'Connect to wallet' : humanizeWallet(user.account)
-          }}
-        </button>
-        <span v-if="user.account" id="key-info">🗝️ {{ user.balance }}</span>
+        <div id="navbar-container">
+          <button id="connect-wallet" class="nes-btn is-disabled" @click="init">
+            {{ !user.account ? 'Connect to wallet' :
+            humanizeWallet(user.account) }}
+          </button>
+          <span v-if="user.account" id="key-info" class="nes-text is-warning">🗝️ {{ user.balance }}</span>
+        </div>
       </div>
       <div id="main">
-        <!-- Main -->
-        <img src="https://vuejs.org/images/logo.png" alt="Vue logo" />
         <h1>{{ greeting }}</h1>
         <div id="app-dialog">
           <div id="nft-list-section">
-            <div id="nft" v-for="token in vault.tokens">
-              <img :src="token.uri" />
-            </div>
+              <img id="nft-img" :src="token.uri"  v-for="token in vault.tokens" />
           </div>
           <div id="nft-unlock-section" v-if="user.account">
             <button
@@ -48,7 +46,7 @@
               v-if="!unlockstates.show"
               @click="unlocknft"
             >
-              <span>🔐 My Random NFT</span>
+              <span>🔓 My Random NFT</span>
             </button>
 
             <div id="nft-unlockstates-section" v-if="unlockstates.show">
@@ -279,9 +277,9 @@
       #app {
         display: flex;
         flex-direction: column;
-        max-width: 72rem;
-        margin: auto;
         height: 100vh;
+        background-image: url("public/chestbg2x.png");
+        background-size: cover;
       }
       #connect-wallet {
         width: max-content;
@@ -289,12 +287,17 @@
         margin-top: 20px;
       }
       #navbar {
+        width: 100%;
+        max-width: 72rem;
+        margin-top: 20px;
+        margin: auto;
+        margin-bottom: 20px;
+      }
+      #navbar-container {
         display: flex;
         flex-direction: column;
         justify-content: flex-end;
         align-items: flex-end;
-        float: right;
-        margin-top: 20px;
       }
       #main {
         display: flex;
@@ -302,7 +305,10 @@
         justify-content: center;
         align-items: center;
         text-align: center;
+        width: 100%;
+        max-width: 72rem;
         margin: auto;
+        margin-top: 1px;
       }
       #key-info {
         display: flex;
@@ -316,33 +322,27 @@
       }
       #app-dialog {
         display: flex;
-        gap: 2rem;
-        position: absolute;
+        gap: 10rem;
         float: left;
         bottom: 150px;
         height: 500px;
-        width: 1000px;
+        width: 100%;
       }
       #nft-list-section {
         display: grid;
         grid-template-columns: auto auto auto;
         gap: 1rem;
         flex-basis: 50%;
-        border-radius: 0.75rem;
-        background-color: rgb(245, 245, 245);
+        background-color: #544b42;
+        border-radius: 20px;
         box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1),
           0 2px 4px -2px rgb(0 0 0 / 0.1);
         padding: 20px;
       }
 
-      #nft {
-        position: relative;
-        overflow: hidden;
-        width: 200px;
-        height: 200px;
-      }
-      #nft img {
-        width: 100%;
+      #nft-img {
+        width: 100px;
+        border-radius: 10px;
       }
       #nft #status {
         position: absolute;
@@ -352,7 +352,6 @@
         transform: rotate(45deg);
         background: red;
         color: white;
-        border: 1px solid red;
         width: 100%;
       }
       #nft-unlock-section {
@@ -360,8 +359,8 @@
         justify-content: center;
         align-items: center;
         flex-basis: 50%;
-        border-radius: 0.75rem;
-        background-color: rgb(245, 245, 245);
+        border-radius: 20px;
+        background-color: #544b42;
         box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1),
           0 2px 4px -2px rgb(0 0 0 / 0.1);
       }
