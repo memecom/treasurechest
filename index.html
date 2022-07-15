@@ -30,7 +30,7 @@
             {{ !user.account ? 'Connect to wallet' :
             humanizeWallet(user.account) }}
           </button>
-          <span v-if="user.account" id="key-info" class="nes-text is-warning">🗝️ {{ user.balance }}</span>
+          <span v-if="user.account" id="key-info" class="nes-text is-warning">🔑 {{ user.balance }}</span>
         </div>
       </div>
       <div id="main">
