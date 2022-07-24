@@ -1,0 +1,99 @@
+body {
+    font-family: "Press Start 2P";
+  }
+  #app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background-image: url("public/chestbg2x.png");
+    background-size: cover;
+  }
+  #connect-wallet {
+    width: max-content;
+    align-items: flex-end;
+    margin-top: 20px;
+  }
+  #navbar {
+    width: 100%;
+    max-width: 72rem;
+    margin-top: 20px;
+    margin: auto;
+    margin-bottom: 20px;
+  }
+  #navbar-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: flex-end;
+  }
+  #main {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    width: 100%;
+    max-width: 72rem;
+    margin: auto;
+    margin-top: 1px;
+  }
+  #key-info {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 10px;
+  }
+  #unlock-nft {
+    font-size: 0.75rem !important;
+    width: max-content;
+  }
+  #app-dialog {
+    display: flex;
+    gap: 10rem;
+    float: left;
+    bottom: 150px;
+    height: 500px;
+    width: 100%;
+  }
+  #nft-list-section {
+    display: grid;
+    grid-template-columns: auto auto auto;
+    gap: 1rem;
+    flex-basis: 50%;
+    background-color: #544b42;
+    border-radius: 20px;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1),
+      0 2px 4px -2px rgb(0 0 0 / 0.1);
+    padding: 20px;
+  }
+
+  #nft-img {
+    width: 100px;
+    border-radius: 10px;
+  }
+  #nft #status {
+    position: absolute;
+    top: 30px;
+    right: -70px;
+    font-size: 10px;
+    transform: rotate(45deg);
+    background: red;
+    color: white;
+    width: 100%;
+  }
+  #nft-unlock-section {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-basis: 50%;
+    border-radius: 20px;
+    background-color: #544b42;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1),
+      0 2px 4px -2px rgb(0 0 0 / 0.1);
+  }
+  #nft-unlockstates-section {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+  }
