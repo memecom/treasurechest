@@ -1,0 +1,7 @@
+  treasurechest:
+    image: nginx:latest
+    ports:
+      - "8088:80"
+    volumes:
+      - "./app/:/var/www/"
+      - "./nginx/:/etc/nginx/conf.d/"
