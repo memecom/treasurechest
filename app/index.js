@@ -31,7 +31,7 @@ var app = new Vue({
     humanizeWallet: function (account) {
       return `${account.substr(0, 5)}...${account.substr(-3)}`;
     },
-    imageFromIpfs: async function (uri) {
+    imageFromURI: async function (uri) {
       let url = uri;
       if (url.includes("ipfs://"))
         url = uri.replace("ipfs://", "https://ipfs.io/ipfs/");
@@ -52,7 +52,7 @@ var app = new Vue({
       this.unlockstates = {
         show: false,
         approve: false,
-        increasepending: false,
+        increaseAllowance: false,
         receivetoken: false,
       };
     },
@@ -127,7 +127,7 @@ var app = new Vue({
         }
         let uri = await this.contracts[token.address].tokenURI(token.id);
 
-        token.uri = await this.imageFromIpfs(uri);
+        token.uri = await this.imageFromURI(uri);
         return token;
       });
     },
@@ -156,6 +156,7 @@ var app = new Vue({
         await tx1.wait();
         this.unlockstates.approve = true;
       } catch (e) {
+        console.log(e);
         this.resetUnlockStates();
       }
 
@@ -167,6 +168,7 @@ var app = new Vue({
         await tx2.wait();
         this.unlockstates.increaseAllowance = true;
       } catch (e) {
+        console.log(e);
         this.resetUnlockStates();
       }
 
@@ -178,6 +180,7 @@ var app = new Vue({
         await tx3.wait();
         this.unlockstates.receiveToken = true;
       } catch (e) {
+        console.log(e);
         this.resetUnlockStates();
       }
 
