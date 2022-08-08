@@ -32,7 +32,10 @@ var app = new Vue({
       return `${account.substr(0, 5)}...${account.substr(-3)}`;
     },
     imageFromIpfs: async function (uri) {
-      let url = uri.replace("ipfs://", "https://ipfs.io/ipfs/");
+      let url = uri;
+      if (url.includes("ipfs://"))
+        url = uri.replace("ipfs://", "https://ipfs.io/ipfs/");
+      if (url.includes("http://")) url = uri.replace("http://", "https://");
       const response = await fetch(url);
       const data = await response.json();
       let imgurl = data.image;
@@ -41,11 +44,9 @@ var app = new Vue({
       return imgurl;
     },
     fetchUserKeys: async function () {
-      console.log("fetch user balance");
       this.user.balance = await this.keys.contract.balanceOf(this.user.account);
-      console.log(this.user.balance);
+
       this.user.balance = ethers.utils.formatEther(this.user.balance) / 1;
-      console.log(this.user.balance);
     },
     resetUnlockStates: function () {
       this.unlockstates = {
@@ -87,7 +88,7 @@ var app = new Vue({
       ];
 
       this.keys.address = await this.vault.contract.getTokenAddr();
-      console.log(this.keys.address);
+
       this.keys.contract = new ethers.Contract(
         this.keys.address,
         this.keys.abi,
@@ -97,6 +98,7 @@ var app = new Vue({
     tokensInit: async function () {
       let tokens = await this.vault.contract.getNFTs();
       this.vault.tokens = [];
+
       tokens.map((token) => {
         let { tokenId, value, contractAddress } = token;
         tokenId = ethers.BigNumber.from(tokenId).toString();
@@ -113,7 +115,7 @@ var app = new Vue({
         "function tokenURI(uint256 _tokenId) view returns (string)",
       ];
 
-      this.vault.tokens.map(async (token) => {
+      this.vault.tokens.map(async (token, index) => {
         if (!this.contracts[token.address]) {
           let contract = new ethers.Contract(
             token.address,
@@ -123,7 +125,8 @@ var app = new Vue({
           this.contracts[token.address] = {};
           this.contracts[token.address] = contract;
         }
-        const uri = await this.contracts[token.address].tokenURI(token.id);
+        let uri = await this.contracts[token.address].tokenURI(token.id);
+
         token.uri = await this.imageFromIpfs(uri);
       });
     },
@@ -135,11 +138,8 @@ var app = new Vue({
           await this.keysInit();
           await this.tokensInit();
           this.fetchUserKeys();
-        } catch (e) {
-          console.log(e);
-        }
+        } catch (e) {}
       } else {
-        console.log("no ethereum?");
         // this.greeting = "No web3? You should consider trying MetaMask!";
       }
     },
@@ -156,7 +156,6 @@ var app = new Vue({
         this.unlockstates.approve = true;
       } catch (e) {
         this.resetUnlockStates();
-        console.log(e);
       }
 
       try {
@@ -168,7 +167,6 @@ var app = new Vue({
         this.unlockstates.increaseAllowance = true;
       } catch (e) {
         this.resetUnlockStates();
-        console.log(e);
       }
 
       try {
@@ -180,7 +178,6 @@ var app = new Vue({
         this.unlockstates.receiveToken = true;
       } catch (e) {
         this.resetUnlockStates();
-        console.log(e);
       }
 
       //sucess
@@ -193,7 +190,6 @@ var app = new Vue({
     },
   },
   mounted: function () {
-    console.log("mounted");
     this.init();
   },
 });
