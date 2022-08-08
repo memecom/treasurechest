@@ -128,6 +128,7 @@ var app = new Vue({
         let uri = await this.contracts[token.address].tokenURI(token.id);
 
         token.uri = await this.imageFromIpfs(uri);
+        return token;
       });
     },
     init: async function () {
