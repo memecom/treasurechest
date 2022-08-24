@@ -158,7 +158,7 @@ var app = new Vue({
           this.user.account,
           this.vault.address
         )
-      ).isZero();
+      ).gte(ethers.BigNumber.from(allowed));
       this.unlockstates.approve = !needsallowance;
       this.unlockstates.increaseAllowance = !needsallowance;
 
