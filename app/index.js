@@ -81,6 +81,8 @@ var app = new Vue({
       this.keys.abi = [
         // Recieve key balance in wallet
         "function balanceOf(address) view returns (uint)",
+        // Get allowance
+        "function allowance(address owner, address spender) public view returns (uint256)",
         // Approve to spend your tokens
         "function approve(address spender, uint amount)",
         // Increase allowance after approving
@@ -146,36 +148,49 @@ var app = new Vue({
     },
     unlocknft: async function () {
       const signer = this.provider.getSigner();
+      const allowed = "10000000000000000000";
+      const multiplier = "00000";
 
       this.unlockstates.show = true;
 
-      try {
-        const tx1 = await this.keys.contract
-          .connect(signer)
-          .approve(this.vault.address, "10000000000000000000");
-        await tx1.wait();
-        this.unlockstates.approve = true;
-      } catch (e) {
-        console.log(e);
-        this.resetUnlockStates();
-      }
+      let needsallowance = (
+        await this.keys.contract.allowance(
+          this.user.account,
+          this.vault.address
+        )
+      ).lte(ethers.BigNumber.from(allowed));
+      this.unlockstates.approve = !needsallowance;
+      this.unlockstates.increaseAllowance = !needsallowance;
 
-      try {
-        const tx2 = await this.keys.contract
-          .connect(signer)
-          .increaseAllowance(this.vault.address, "10000000000000000000");
+      if (needsallowance) {
+        try {
+          const tx1 = await this.keys.contract
+            .connect(signer)
+            .approve(this.vault.address, allowed + multiplier);
+          await tx1.wait();
+          this.unlockstates.approve = true;
+        } catch (e) {
+          console.log(e);
+          this.resetUnlockStates();
+        }
 
-        await tx2.wait();
-        this.unlockstates.increaseAllowance = true;
-      } catch (e) {
-        console.log(e);
-        this.resetUnlockStates();
+        try {
+          const tx2 = await this.keys.contract
+            .connect(signer)
+            .increaseAllowance(this.vault.address, allowed + multiplier);
+
+          await tx2.wait();
+          this.unlockstates.increaseAllowance = true;
+        } catch (e) {
+          console.log(e);
+          this.resetUnlockStates();
+        }
       }
 
       try {
         const tx3 = await this.vault.contract
           .connect(signer)
-          .receiveToken("10000000000000000000");
+          .receiveToken(allowed);
 
         await tx3.wait();
         this.unlockstates.receiveToken = true;
